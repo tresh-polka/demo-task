@@ -1,0 +1,10 @@
+{% extends 'shop/base.html' %}
+{% block content %}
+    <a href="{% url 'products_list' %}">Назад</a>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <p>ID товара: <b>{{ instance.id|default:"Присвоится автоматически" }}</b></p>
+        <button type="submit">Сохранить</button>
+    </form>
+{% endblock %}

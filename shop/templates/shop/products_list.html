@@ -1,0 +1,90 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Список товаров{% endblock %}
+{% block header_title %}Каталог обуви{% endblock %}
+
+{% block content %}
+    <div class="filter-panel">
+        <form method="get" id="filter-form">
+            <input type="text" name="search" 
+                placeholder="Поиск..." 
+                value="{{ request.GET.search|default:'' }}" 
+                oninput="this.form.submit()" 
+                onfocus="var val=this.value; this.value=''; this.value=val;" 
+                autofocus>
+
+            <select name="sort" onchange="this.form.submit()">
+                <option value="">Сортировка (Остаток)</option>
+                <option value="amount_asc" {% if request.GET.sort == 'amount_asc' %}selected{% endif %}>Остаток ↑</option>
+                <option value="amount_desc" {% if request.GET.sort == 'amount_desc' %}selected{% endif %}>Остаток ↓</option>
+                <option value="price_asc" {% if request.GET.sort == 'price_asc' %}selected{% endif %}>Цена ↑</option>
+                <option value="price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>Цена ↓</option>
+            </select>
+
+            <select name="provider" onchange="this.form.submit()">
+                <option value="">Все поставщики</option>
+                {% for pr in providers %}
+                    <option value="{{ pr.id }}" {% if request.GET.provider == pr.id|stringformat:"i" %}selected{% endif %}>
+                        {{ pr.provider_name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <a href="{% url 'products_list' %}" class="reset-link">Сбросить</a>
+        </form>
+
+        {% if request.session.user_role == 'Администратор' %}
+            <hr>
+            <a href="{% url 'products_add' %}" class="add-button">+ Добавить новый товар</a>
+        {% endif %}
+    </div>
+
+    <h1>Наши товары</h1>
+
+    <div class="product-container">
+        {% for product in products %}
+            <div 
+                {% if request.session.user_role == 'Администратор' %} 
+                    onclick='location.href="{% url "product_edit" product.id %}"'
+                    title="Нажмите, чтобы редактировать"
+                {% endif %}
+                class="product-card 
+                    {% if product.amount == 0 %}out-of-stock
+                    {% elif product.discount > 15 %}high-discount
+                    {% endif %}
+                    {% if request.session.user_role == 'Администратор' %}admin-clickable{% endif %}"
+            >
+                {% if product.product_photo %}
+                    <img src="{{ product.product_photo.url }}" alt="Фото товара" width="100">
+                {% else %}
+                    <img src="{% static 'shop/img/picture.png' %}" alt="Заглушка" width="100">
+                {% endif %}
+
+                <h3>{{ product.product_name }}</h3>
+                <p><small>{{ product.product_description|truncatechars:100 }}</small></p>
+                
+                <p><b>Производитель:</b> {{ product.producer.producer_name }}</p>
+                <p><b>Поставщик:</b> {{ product.provider.provider_name }}</p>
+
+                {% if product.discount > 0 %}
+                    <p>Цена:
+                        <s class="old-price">{{ product.price }} руб.</s>
+                        <span class="new-price 
+                            {% if product.discount <= 15 %}normal-discount{% else %}high-discount-text{% endif %}">
+                            {{ product.price|floatformat:2|add:"0"|add:(-product.price * product.discount / 100)|floatformat:2 }} руб.
+                        </span>
+                    </p>
+                {% else %}
+                    <p>Цена: {{ product.price }} руб.</p>
+                {% endif %}
+
+                <p>Остаток: {{ product.amount }} 
+                    {% if product.unit %}{{ product.unit.unit_name }}{% endif %}
+                </p>
+            </div>
+        {% empty %}
+            <p>Товары не найдены.</p>
+        {% endfor %}
+    </div>
+{% endblock %}
